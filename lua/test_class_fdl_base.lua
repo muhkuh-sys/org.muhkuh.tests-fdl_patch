@@ -89,94 +89,8 @@ function TestClassFDLBase:_init(strTestName, uiTestCase, tLogWriter, strLogLevel
 end
 
 
---- Increase a MAC address by 1.
--- A MAC adress is stored in a table with 6 entries - one for each byte in the MAC address.
--- Example: the MAC 01:23:45:67:89:ab corresponds to this table:
---          [ 0x01, 0x23, 0x45, 0x67, 0x89, 0xab ]
--- The MAC address is incremented in place, this means the input table is modified.
--- @param aucMac The table holding the MAC address.
---               Please note that the MAC address is increased in-place in the input table.
--- @return nothing
-function TestClassFDLBase.__increase_mac(aucMac)
-  for iCnt=6,1,-1 do
-    local ucDigit = aucMac[iCnt] + 1
-    aucMac[iCnt] = ucDigit
-    if ucDigit<0x100 then
-      break
-    else
-      aucMac[iCnt] = 0
-    end
-  end
-end
 
-
---- Request an existing or new set of MAC addresses for a board from a pretzel server.
--- The function first checks for an existing set of MAC addresses for the board. It asks a pretzel database for
--- entries matching the "group", "manufacturer", "devicenr" and "serialnr" attributes of the board. If at least one
--- entry could be found, the board has assigned MAC addresses. In this case the number of assigned MACs must match the
--- parameter "uiNumberOfMacs", which defines how many addresses the board should get. If no assigned MAC was found in
--- the pretzel database, the function reserves the requested number of MACs for the board.
--- @parameter atAttr A table with the board attributes.
--- @parameter uiNumberOfMacs The number of MACs for the board.
--- @return A table with MAC addresses encoded as strings in case of success.
---         (01:23:45:67:89:ab -> string.char(0x01, 0x23, 0x45, 0x67, 0x89, 0xab))
---         nil in case of an error.
-function TestClassFDLBase:__get_macs(atAttr, uiNumberOfMacs)
-  local tLog = self.tLog
-  local astrMACs = nil
-
-  local pretzel = require 'pretzel'
-  local tBoardInfo = pretzel:get_board_info(atAttr.group, atAttr.manufacturer, atAttr.devicenr, atAttr.serialnr)
-  if tBoardInfo==nil then
-    tLog.error('Failed to search for the board.')
-  elseif #tBoardInfo == 0 then
-    tLog.info('No assigned MAC found. Request a new one.')
-
-    local aucMac = pretzel:request(atAttr, uiNumberOfMacs)
-    if aucMac==nil then
-      tLog.error('Failed to request the MAC for the board.')
-    else
-      astrMACs = {}
-      for _=1,uiNumberOfMacs do
-        local strMac = string.char(aucMac[1], aucMac[2], aucMac[3], aucMac[4], aucMac[5], aucMac[6])
-        table.insert(astrMACs, strMac)
-        tLog.info('Received a new MAC for the board: %02X:%02X:%02X:%02X:%02X:%02X .',
-                  aucMac[1], aucMac[2], aucMac[3], aucMac[4], aucMac[5], aucMac[6])
-
-        self.__increase_mac(aucMac)
-      end
-    end
-
-  elseif #tBoardInfo == uiNumberOfMacs then
-    astrMACs = {}
-    for _, tAttr in ipairs(tBoardInfo) do
-      local strMacAscii = tAttr.mac
-      local strMac1, strMac2, strMac3, strMac4, strMac5, strMac6 = string.match(
-        strMacAscii,
-        '(%x%x)(%x%x)(%x%x)(%x%x)(%x%x)(%x%x)'
-      )
-      local strMac = string.char(
-        tonumber(strMac1, 16),
-        tonumber(strMac2, 16),
-        tonumber(strMac3, 16),
-        tonumber(strMac4, 16),
-        tonumber(strMac5, 16),
-        tonumber(strMac6, 16)
-      )
-      table.insert(astrMACs, strMac)
-      tLog.info('Found existing MAC for the board: %s .', strMacAscii)
-    end
-
-  else
-    tLog.error('Expected %d MAC addresses, but found %d on the server.', uiNumberOfMacs, #tBoardInfo)
-  end
-
-  return astrMACs
-end
-
-
-
-function TestClassFDLBase:requestMacs(tFDLContents, tPatchData, strMacGroupName, ulMacCom, ulMacApp)
+function TestClassFDLBase:requestMacs(tFDLContents, tPatchData, strDataProviderItem, ulMacCom, ulMacApp)
   local tLog = self.tLog
 
   -- Check the number of requested MACs.
@@ -217,66 +131,70 @@ function TestClassFDLBase:requestMacs(tFDLContents, tPatchData, strMacGroupName,
   if ulSerial==nil then
     error('The patch data does not contain a serial number.')
   end
-  local usProductionDate = tPatch_BasicDeviceData.usProductionDate
-  if ulSerial==nil then
-    error('The patch data does not contain a production date.')
-  end
 
   -- Request all MAC addresses.
   local uiMacTotal = ulMacCom + ulMacApp
-  local atMACs
+  local atBoardInfo
   if uiMacTotal>0 then
     local atAttr = {
-      group = strMacGroupName,
-      manufacturer = ulManufacturer,
-      devicenr = ulDeviceNr,
-      serialnr = ulSerial,
-      hwrev = ulHwRev,
-      productiondate = usProductionDate,
-      deviceclass = ulDeviceClass,
-      hwcompaibility = ulHwComp
+      MANUFACTURER = ulManufacturer,
+      DEVICENR = ulDeviceNr,
+      SERIALNR = ulSerial,
+      HWREV = ulHwRev,
+      DEVICECLASS = ulDeviceClass,
+      HWCOMPATIBILITY = ulHwComp,
+      NUMBEROFMACS = uiMacTotal
     }
-    atMACs = self:__get_macs(atAttr, uiMacTotal)
-    if atMACs==nil then
-      error('Failed to request the MAC addresses.')
+    local tDataItem = _G.tester:getDataItem(strDataProviderItem, atAttr)
+    if tDataItem==nil then
+      local strMsg = string.format('No data provider item found with the name "%s".', strDataProviderItem)
+      tLog.error(strMsg)
+      error(strMsg)
+    end
+    atBoardInfo = tDataItem.board_info
+    if atBoardInfo==nil then
+      local strMsg = string.format(
+        'The data item "%s" has no "board_info" attribute. Is this really providing MAC addresses?',
+        strDataProviderItem
+      )
+      tLog.error(strMsg)
+      error(strMsg)
     end
 
     local astrPrettyMacs = {}
     local uiMacCnt = 1
     if ulMacCom>0 then
       for uiCnt=1,ulMacCom do
-        local m = atMACs[uiMacCnt]
+        local strMac = atBoardInfo[uiMacCnt].mac_pretty
+        if strMac==nil then
+          local strMsg = string.format(
+            'The data provider returned no pretty MAC for entry %d.',
+            uiMacCnt
+          )
+          tLog.error(strMsg)
+          error(strMsg)
+        end
         uiMacCnt = uiMacCnt + 1
 
-        atMacCOM[uiCnt] = { aucMAC = m }
-        local strMac = string.format(
-          '%02X:%02X:%02X:%02X:%02X:%02X',
-          string.byte(m, 1),
-          string.byte(m, 2),
-          string.byte(m, 3),
-          string.byte(m, 4),
-          string.byte(m, 5),
-          string.byte(m, 6)
-        )
+        atMacCOM[uiCnt] = { aucMAC=strMac }
         tLog.debug('Patch FDL field "atMacCOM[%d].aucMAC = %s', uiCnt, strMac)
         table.insert(astrPrettyMacs, strMac)
       end
     end
     if ulMacApp>0 then
       for uiCnt=1,ulMacApp do
-        local m = atMACs[uiMacCnt]
+        local strMac = atBoardInfo[uiMacCnt].mac_pretty
+        if strMac==nil then
+          local strMsg = string.format(
+            'The data provider returned no pretty MAC for entry %d.',
+            uiMacCnt
+          )
+          tLog.error(strMsg)
+          error(strMsg)
+        end
         uiMacCnt = uiMacCnt + 1
 
-        atMacAPP[uiCnt] = { aucMAC = m }
-        local strMac = string.format(
-          '%02X:%02X:%02X:%02X:%02X:%02X',
-          string.byte(m, 1),
-          string.byte(m, 2),
-          string.byte(m, 3),
-          string.byte(m, 4),
-          string.byte(m, 5),
-          string.byte(m, 6)
-        )
+        atMacAPP[uiCnt] = { aucMAC=strMac }
         tLog.debug('Patch FDL field "atMacAPP[%d].aucMAC = %s', uiCnt, strMac)
         table.insert(astrPrettyMacs, strMac)
       end
