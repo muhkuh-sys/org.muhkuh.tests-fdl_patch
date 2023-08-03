@@ -19,13 +19,4 @@
 		<dependency group="org.muhkuh.tools" module="flasher_pt" artifact="flasher" version="1"/>
 		<dependency group="com.github.lua-curl" module="lua-curlv3" artifact="lua5.4-lua-curlv3" version="0"/>
 	</dependencies>
-	<dependencies>
-		<dependency group="org.muhkuh.tools" module="muhkuh_base_cli" artifact="lua5.1-muhkuh_base_cli" version="2"/>
-		<dependency group="org.muhkuh.lua" module="pretzel" artifact="pretzel" version="0"/>
-		<dependency group="org.muhkuh.lua" module="fdl" artifact="fdl" version="0"/>
-		<dependency group="de.dkolf" module="dkjson" artifact="dkjson" version="2"/>
-		<dependency group="com.github.keplerproject" module="luasql" artifact="lua5.1-luasql-mysql" version="2"/>
-		<dependency group="org.muhkuh.tools" module="flasher_pt" artifact="flasher" version="1"/>
-		<dependency group="com.github.lua-curl" module="lua-curlv3" artifact="lua5.1-lua-curlv3" version="0"/>
-	</dependencies>
 </jonchki-artifact>
