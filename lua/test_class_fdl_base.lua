@@ -145,7 +145,7 @@ function TestClassFDLBase:requestMacs(tFDLContents, tPatchData, strDataProviderI
       HWCOMPATIBILITY = ulHwComp,
       NUMBEROFMACS = uiMacTotal
     }
-    local tDataItem = _G.tester:getDataItem(strDataProviderItem, atAttr)
+    local tDataItem, tMergedParameter = _G.tester:getDataItem(strDataProviderItem, atAttr)
     if tDataItem==nil then
       local strMsg = string.format('No data provider item found with the name "%s".', strDataProviderItem)
       tLog.error(strMsg)
@@ -200,10 +200,25 @@ function TestClassFDLBase:requestMacs(tFDLContents, tPatchData, strDataProviderI
       end
     end
 
+    -- Get the group from the merged parameters.
+    local strGroup = tMergedParameter.GROUP
+
+    -- Get the production date from the first reserved MAC.
+    local usProductionDate = atBoardInfo[1].productiondate
+
     -- Log all MACs.
     _G.tester:sendLogEvent('muhkuh.attribute.mac', {
-       attributes = atAttr,
-       mac = astrPrettyMacs
+      attributes = {
+        deviceclass = ulDeviceClass,
+        devicenr = ulDeviceNr,
+        group = strGroup,
+        hwcompaibility = ulHwComp,
+        hwrev = ulHwRev,
+        manufacturer = ulManufacturer,
+        productiondate = usProductionDate,
+        serialnr = ulSerial
+      },
+      mac = astrPrettyMacs
     })
   end
 end
