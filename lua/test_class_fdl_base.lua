@@ -603,7 +603,7 @@ function TestClassFDLBase:setProductionDate(tPatches)
   -- Get the lower 2 digits of the year.
   local ulYear = tDateNow:getisoyear() % 100
   -- Get the week number.
-  local ulWeek = tDateNow:getweeknumber()
+  local ulWeek = tDateNow:getisoweeknumber()
   local usProductionDate = ulYear*256 + ulWeek
 
   -- Patch the production date.
