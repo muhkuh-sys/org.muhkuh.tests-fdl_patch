@@ -4,7 +4,17 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "python3 mbs/mbs",
+            "command": "mbs2/mbs",
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "mbs2/mbs -c",
             "problemMatcher": "$gcc",
             "group": {
                 "kind": "build",
