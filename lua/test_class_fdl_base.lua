@@ -271,7 +271,7 @@ end
 -- @parameter tPlugin The plugin connection to the netX.
 -- @parameter tFlashPosition Optional table to overwrite the default FDL position.
 -- @return noting
-function TestClassFDLBase:writeFDL(tFDLContents, tPlugin, tFlashPosition)
+function TestClassFDLBase:writeFDL(tFDLContents, tPlugin, tFlashPosition, strExtraData)
   tFlashPosition = tFlashPosition or {}
   local tLog = self.tLog
 
@@ -331,8 +331,22 @@ function TestClassFDLBase:writeFDL(tFDLContents, tPlugin, tFlashPosition)
 
   -- Create a new FDL instance.
   local tFDL = require 'fdl'(tLog)
+
+  -- Get any data after the FDL.
+  local sizBinaryFdlMaxInBytes = tFDL.sizBinaryFdlMaxInBytes or 1024
+
   -- Encode the FDL to binary.
   local strNewFDL = tFDL:fdl2bin(tFDLContents)
+  -- If extra data exists, pad the FDL and append it.
+  if strExtraData~=nil and strExtraData~='' then
+    local sizNewFdl = string.len(strNewFDL)
+    if sizNewFdl<sizBinaryFdlMaxInBytes then
+      -- Pad the new FDL with 0xFF.
+      strNewFDL = strNewFDL .. string.rep(string.char(0xff), sizBinaryFdlMaxInBytes-sizNewFdl)
+    end
+    -- Append the extra data.
+    strNewFDL = strNewFDL .. strExtraData
+  end
 
   -- Add the FDL contents to the log.
   local atEventData = {
@@ -395,13 +409,18 @@ function TestClassFDLBase:readTemplate(strFdlTemplateFile)
 
   -- Create a new FDL instance.
   local tFDL = require 'fdl'(tLog)
+
+  -- Get any data after the FDL.
+  local sizBinaryFdlMaxInBytes = tFDL.sizBinaryFdlMaxInBytes or 1024
+  local strExtraData = string.sub(strFdlTemplate, sizBinaryFdlMaxInBytes+1)
+
   -- Parse the binary FDL into a structure.
   local tFDLContents = tFDL:bin2fdl(strFdlTemplate)
   if tFDLContents==nil then
     error('Failed to parse the FDL.')
   end
 
-  return tFDLContents
+  return tFDLContents, strExtraData
 end
 
 
@@ -583,13 +602,18 @@ function TestClassFDLBase:readTemplateFromWFP(
 
   -- Create a new FDL instance.
   local tFDL = require 'fdl'(tLog)
+
+  -- Get any data after the FDL.
+  local sizBinaryFdlMaxInBytes = tFDL.sizBinaryFdlMaxInBytes or 1024
+  local strExtraData = string.sub(strFdlTemplate, sizBinaryFdlMaxInBytes+1)
+
   -- Parse the binary FDL into a structure.
   local tFDLContents = tFDL:bin2fdl(strFdlTemplate)
   if tFDLContents==nil then
     error('Failed to parse the FDL.')
   end
 
-  return tFDLContents
+  return tFDLContents, strExtraData
 end
 
 
