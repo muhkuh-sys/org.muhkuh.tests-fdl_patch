@@ -348,11 +348,15 @@ function TestClassFDLBase:writeFDL(tFDLContents, tPlugin, tFlashPosition, strExt
     strNewFDL = strNewFDL .. strExtraData
   end
 
+  local strBase64_FDL = _G.tester:asciiArmor(strNewFDL)
+  tLog.info('FDL: %s', strBase64_FDL)
+
   -- Add the FDL contents to the log.
   local atEventData = {
     fdl = tFDLContents,
-    bin =_G.tester:asciiArmor(strNewFDL)
+    bin = strBase64_FDL
   }
+
   _G.tester:sendLogEvent('muhkuh.attribute.fdl', atEventData)
 
   -- Install the flasher binary.
