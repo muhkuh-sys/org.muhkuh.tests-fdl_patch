@@ -20,7 +20,7 @@ local atEnv = require 'mbs'
 --
 
 -- FIXME: The MBS2 system should read this from a setup file.
-atEnv.DEFAULT.atVars.PROJECT_VERSION = { "2", "1", "1" }
+atEnv.DEFAULT.atVars.PROJECT_VERSION = { "3", "0", "0" }
 
 ------------------------------------------------------------------------------
 --
@@ -42,10 +42,18 @@ local atArtifacts =
     archive = {
       structure = {
         ['lua'] = {
-          'lua/test_class_fdl_base.lua'
+          'local/test_class_fdl_base.lua',
+          'local/lua/test_class_fdl.lua'
+        },
+        ['parameter'] = {
+          'parameter/org.muhkuh.tests.patch_flash_fdl.patch_flash_fdl.json'
+        },
+        ['doc'] = {
+          'doc/teststep.mustache.asciidoc',
+          'doc/test_flow.gv',
         },
         ['templates'] = {
-          'lua/test.lua'
+          'local/test.lua'
         },
         'installer/install.lua',
         'installer/install_testcase.lua'
