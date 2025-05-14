@@ -1,0 +1,95 @@
+{
+  "$schema" : "./schema/parameter.schema.json",
+
+
+  "parameter": [
+    {
+      "name": "plugin",
+      "description": "A pattern for the plugin to use.",
+      "required": "false"
+    },
+    {
+      "name": "plugin_options",
+      "description": "Plugin options as a JSON object.",
+      "required": "false"
+    },
+    {
+      "name": "wfp_dp",
+      "description": "The data provider item for the WFP file to flash.",
+      "required": "true"
+    },
+    {
+      "name": "wfp_conditions",
+      "description": "The conditions for the FDL file in the WFP.",
+      "required": "true",
+      "default": ""
+    },
+    {
+      "name": "wfp_bus",
+      "description": "The bus for the FDL entry in the WFP.",
+      "required": "false"
+    },
+    {
+      "name": "wfp_unit",
+      "description": "The unit for the FDL entry in the WFP.",
+      "required": "false"
+    },
+    {
+      "name": "wfp_chip_select",
+      "description": "The chip select for the FDL entry in the WFP.",
+      "required": "false"
+    },
+    {
+      "name": "wfp_offset",
+      "description": "The offset for the FDL entry in the WFP.",
+      "required": "false"
+    },
+    {
+      "name": "mac_dp",
+      "description": "The data provider item for the MAC adresses.",
+      "required": "true"
+    },
+    {
+      "name": "Manufacturer",
+      "description": "The manufacturer number.",
+      "required": "false"
+    },
+    {
+      "name": "serial",
+      "description": "The serial number of the board.",
+      "required": "true"
+    },
+    {
+      "name": "DeviceNr",
+      "description": "The Devicenumber of the board.",
+      "required": "true"
+    },
+    {
+      "name": "HwRev",
+      "description": "The hardware revision number of the board.",
+      "required": "true"
+    },
+    {
+      "name": "DeviceClass",
+      "description": "The device classification number of the board.",
+      "required": "false"
+    },    
+    {
+      "name": "HwComp",
+      "description": "The hardware compatibility number of the board.",
+      "required": "false"
+    },
+    {
+      "name": "mac_com",
+      "description": "The number of MAC addresses on the COM side.",
+      "required": "true",
+      "default": "0"
+    },    
+    {
+      "name": "mac_app",
+      "description": "The number of MAC addresses on the APP side.",
+      "required": "true",
+      "default": "0"
+    }
+  ]
+}

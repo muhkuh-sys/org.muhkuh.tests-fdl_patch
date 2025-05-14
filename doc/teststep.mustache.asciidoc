@@ -1,0 +1,26 @@
+
+This document describes the "patch and flash FDL" teststep for the Muhkuh test framework. By using the data provider and the WFP archive, the FDL contained in the WFP archive is used to patch the data, e.g. serial number, article number, revision or MAC addresses. The patched FDL is written to the DUT.
+
+# Parameter
+
+The following table shows all parameters for this test step.
+The "value" column shows the assigned value.
+Some parameters have a default value, which is listed in the column "default". If the default value is not overwritten, the "value" column is empty. Furthermore a parameter can be connected to a system parameter or the output of another test step. In this case the value field shows "connected to" with the source of the value.
+
+.List of all parameters
+|===
+| Name        | value | default | description
+
+{{#parameter_list}}
+{{#if}}{{type=='connection'}}| `{{name}}` | connected to `{{value}}` | {{#default}}`{{default}}`{{/default}} | {{description}}{{/if}}
+{{#if}}{{type=='constant'}}| `{{name}}` | `{{value}}` | {{#default}}`{{default}}`{{/default}} | {{description}}{{/if}}
+{{#if}}{{type=='default'}}| `{{name}}` | _see default_ | {{#default}}`{{default}}`{{/default}} | {{description}}{{/if}}
+{{/parameter_list}}
+|===
+
+// # Overview
+
+// [graphviz,format="svg"]
+// ....
+// include::test_flow.gv[]
+// ....

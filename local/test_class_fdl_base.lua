@@ -621,6 +621,185 @@ function TestClassFDLBase:readTemplateFromWFP(
 end
 
 
+function TestClassFDLBase:readDataFromWFP(
+  strWfpFile,
+  strTargetTyp,
+  strWfpConditions,
+  uiWfp_Bus,
+  uiWfp_Unit,
+  uiWfp_ChipSelect,
+  uiWfp_Offset
+)
+  local tLog = self.tLog
+  local pl = self.pl
+
+  if strTargetTyp ==nil then
+    local strMsg = 'No target type specified.'
+    tLog.error(strMsg)
+    error(strMsg)
+  end
+
+  if strWfpFile==nil then
+    local strMsg = 'No WFP file specified.'
+    tLog.error(strMsg)
+    error(strMsg)
+  end
+
+  if uiWfp_Bus==nil then
+    local strMsg = 'No bus specified.'
+    tLog.error(strMsg)
+    error(strMsg)
+  end
+
+  if uiWfp_Unit==nil then
+    local strMsg = 'No unit specified.'
+    tLog.error(strMsg)
+    error(strMsg)
+  end
+
+  if uiWfp_ChipSelect==nil then
+    local strMsg = 'No chip select specified.'
+    tLog.error(strMsg)
+    error(strMsg)
+  end
+
+    if uiWfp_Offset==nil then
+    local strMsg = 'No offset specified.'
+    tLog.error(strMsg)
+    error(strMsg)
+  end
+
+  strWfpConditions = strWfpConditions or ''
+
+
+  local astrWfpConditions = pl.stringx.split(strWfpConditions, ',')
+  local atWfpConditions = {}
+  for _, strCondition in ipairs(astrWfpConditions) do
+    local strKey, strValue = string.match(strCondition, '([^=]+)=(.*)')
+    if strKey==nil then
+      tLog.error('Invalid condition: "%s".', strCondition)
+      error('Invalid condition.')
+    elseif atWfpConditions[strKey]~=nil then
+      tLog.error('Redefinition of condition "%s".', strKey)
+      error('Redefinition of condition.')
+    else
+      atWfpConditions[strKey] = strValue
+    end
+  end
+
+  -- Does the file exist?
+  if pl.path.exists(strWfpFile)~=strWfpFile then
+    local strMsg = string.format('The WFP file "%s" does not exist.', strWfpFile)
+    tLog.error('%s', strMsg)
+    error(strMsg)
+  end
+
+  local wfp_control = require 'wfp_control'
+  local tWfpControl = wfp_control(self.tLogWriter)
+
+  -- Read the control file from the WFP archive.
+  tLog.debug('Using WFP archive "%s".', strWfpFile)
+  local tResult = tWfpControl:open(strWfpFile)
+  if tResult==nil then
+    local strMsg = string.format('Failed to open the WFP file "%s".', strWfpFile)
+    tLog.error('%s', strMsg)
+    error(strMsg)
+  end
+
+
+  local function getTarget(strTarget)
+    local tTarget
+    if tWfpControl.atConfigurationTargets~=nil then
+      tLog.debug('Selecting files for chip type %s.', strTarget)
+      tTarget = tWfpControl.atConfigurationTargets[strTarget]
+    end
+    return tTarget
+  end
+
+  -- Does the WFP have an entry for the chip?
+  local tTarget = getTarget(strTargetTyp)
+  if tTarget==nil then
+    local strMsg = string.format('The target type %d is not supported by this WFP.', strTargetTyp)
+    tLog.error('%s', strMsg)
+    error(strMsg)
+  end
+
+  -- Loop over all flashes.
+  local strData
+  for _, tTargetFlash in ipairs(tTarget.atFlashes) do
+    local strBusName = tTargetFlash.strBus
+    local tBus = self.atName2Bus[strBusName]
+    if tBus==nil then
+      local strMsg = string.format(
+        'Error in WFP file "%s": unknown bus "%s" found in control file.',
+        strWfpFile,
+        strBusName
+      )
+      tLog.error('%s', strMsg)
+      error(strMsg)
+    end
+
+    local ulUnit = tTargetFlash.ulUnit
+    local ulChipSelect = tTargetFlash.ulChipSelect
+
+    if tBus~=uiWfp_Bus or ulUnit~=uiWfp_Unit or ulChipSelect~=uiWfp_ChipSelect then
+      tLog.debug('Ignoring entries for bus: %s, unit: %d, chip select: %d', strBusName, ulUnit, ulChipSelect)
+    else
+      for _, tData in ipairs(tTargetFlash.atData) do
+        -- Is this a flash command?
+        if tData.strFile~=nil then
+          local strFile = pl.path.basename(tData.strFile)
+          local ulOffset = tData.ulOffset
+          local strCondition = tData.strCondition
+          tLog.info('Found file "%s" with offset 0x%08x and condition "%s".', strFile, ulOffset, strCondition)
+
+          if ulOffset~=uiWfp_Offset then
+            tLog.debug('Ignoring entry for offset 0x%08x.', ulOffset)
+          else
+            if tWfpControl:matchCondition(atWfpConditions, strCondition)~=true then
+              tLog.info('Not processing file %s : prevented by condition.', strFile)
+            else
+              -- Loading the file data from the archive.
+              strData = tWfpControl:getData(strFile)
+              if strData==nil then
+                local strMsg = string.format(
+                  'Error in WFP "%s": failed to extract the data for file "%s".',
+                  strWfpFile,
+                  strFile
+                )
+                tLog.error(strMsg)
+                error(strMsg)
+              end
+              break
+            end
+          end
+        end
+      end
+
+      if strData~=nil then
+        break
+      end
+    end
+  end
+  if strData==nil then
+    local strMsg = string.format(
+      'No data entry found in WFP "%s" with bus: %s, unit: %d, chip select: %d, offset: %d and conditions "%s".',
+      strWfpFile,
+      uiWfp_Bus,
+      uiWfp_Unit,
+      uiWfp_ChipSelect,
+      uiWfp_Offset,
+      strWfpConditions
+    )
+    tLog.error('%s', strMsg)
+    error(strMsg)
+  end
+
+
+  return strData
+end
+
+
 function TestClassFDLBase:setProductionDate(tPatches)
   local tLog = self.tLog
 
