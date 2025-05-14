@@ -625,10 +625,10 @@ function TestClassFDLBase:readDataFromWFP(
   strWfpFile,
   strTargetTyp,
   strWfpConditions,
-  uiWfp_Bus,
-  uiWfp_Unit,
-  uiWfp_ChipSelect,
-  uiWfp_Offset
+  strWfp_Bus,
+  ulWfp_Unit,
+  ulWfp_ChipSelect,
+  ulWfp_Offset
 )
   local tLog = self.tLog
   local pl = self.pl
@@ -645,25 +645,25 @@ function TestClassFDLBase:readDataFromWFP(
     error(strMsg)
   end
 
-  if uiWfp_Bus==nil then
+  if strWfp_Bus==nil then
     local strMsg = 'No bus specified.'
     tLog.error(strMsg)
     error(strMsg)
   end
 
-  if uiWfp_Unit==nil then
+  if ulWfp_Unit==nil then
     local strMsg = 'No unit specified.'
     tLog.error(strMsg)
     error(strMsg)
   end
 
-  if uiWfp_ChipSelect==nil then
+  if ulWfp_ChipSelect==nil then
     local strMsg = 'No chip select specified.'
     tLog.error(strMsg)
     error(strMsg)
   end
 
-    if uiWfp_Offset==nil then
+    if ulWfp_Offset==nil then
     local strMsg = 'No offset specified.'
     tLog.error(strMsg)
     error(strMsg)
@@ -742,7 +742,7 @@ function TestClassFDLBase:readDataFromWFP(
     local ulUnit = tTargetFlash.ulUnit
     local ulChipSelect = tTargetFlash.ulChipSelect
 
-    if tBus~=uiWfp_Bus or ulUnit~=uiWfp_Unit or ulChipSelect~=uiWfp_ChipSelect then
+    if tBus~=self.atName2Bus[strWfp_Bus] or ulUnit~=ulWfp_Unit or ulChipSelect~=ulWfp_ChipSelect then
       tLog.debug('Ignoring entries for bus: %s, unit: %d, chip select: %d', strBusName, ulUnit, ulChipSelect)
     else
       for _, tData in ipairs(tTargetFlash.atData) do
@@ -753,7 +753,7 @@ function TestClassFDLBase:readDataFromWFP(
           local strCondition = tData.strCondition
           tLog.info('Found file "%s" with offset 0x%08x and condition "%s".', strFile, ulOffset, strCondition)
 
-          if ulOffset~=uiWfp_Offset then
+          if ulOffset~=ulWfp_Offset then
             tLog.debug('Ignoring entry for offset 0x%08x.', ulOffset)
           else
             if tWfpControl:matchCondition(atWfpConditions, strCondition)~=true then
@@ -785,10 +785,10 @@ function TestClassFDLBase:readDataFromWFP(
     local strMsg = string.format(
       'No data entry found in WFP "%s" with bus: %s, unit: %d, chip select: %d, offset: %d and conditions "%s".',
       strWfpFile,
-      uiWfp_Bus,
-      uiWfp_Unit,
-      uiWfp_ChipSelect,
-      uiWfp_Offset,
+      strWfp_Bus,
+      ulWfp_Unit,
+      ulWfp_ChipSelect,
+      ulWfp_Offset,
       strWfpConditions
     )
     tLog.error('%s', strMsg)
