@@ -41,7 +41,7 @@ function TestClassFDL:_init(strTestName, uiTestCase, tLogWriter, strLogLevel)
       required(false),
 
     P:P('mac_dp', 'The data provider item for the MAC adresses.'):
-    required(true),
+    required(false),
 
     P:U32('Manufacturer', 'The manufacturer number.'):
     required(false),
@@ -60,14 +60,6 @@ function TestClassFDL:_init(strTestName, uiTestCase, tLogWriter, strLogLevel)
 
     P:U32('HwComp', 'The hardware compatibility number of the board.'):
       required(false),
-
-    P:U8('mac_com', 'The number of MAC addresses on the COM side.'):
-      default(0):
-      required(true),
-
-    P:U8('mac_app', 'The number of MAC addresses on the APP side.'):
-      default(0):
-      required(true)
   }
 end
 
@@ -99,8 +91,6 @@ function TestClassFDL:run()
   local ulHwComp = atParameter['HwComp']:get()
 
   local strMacDp = atParameter['mac_dp']:get()
-  local ulMacCom = atParameter['mac_com']:get()
-  local ulMacApp = atParameter['mac_app']:get()
 
   -- Open the connection to the netX.
   local tPlugin = self:getPlugin(strPluginPattern, strPluginOptions)
@@ -143,9 +133,60 @@ function TestClassFDL:run()
   -- Please note that the production date must be set before the MACs are requested.
   self:setProductionDate(tPatches)
 
-  -- Request the MAC addresses and add them to the patch data.
-  -- self:requestMacs(tFDLContents, tPatches, strMacGroupName, ulMacCom, ulMacApp)
-  self:requestMacs(tFDLContents, tPatches, strMacDp, ulMacCom, ulMacApp)
+  -- First check HREP for existing MAC-Configuration.
+  local ulMacCom, ulMacApp
+  local tItemConfig = {}
+  tLog.debug('Checking %s, if a data provider item for the MAC addresses is configured...', strMacDp)
+  if strMacDp == nil then
+    tLog.debug('No test.xml parameter specified for the MAC addresses. Skipping MAC address request.')
+  else
+    -- Check if the data provider item config exists.
+    tItemConfig = _G.tester:getDataItemCfg(strMacDp)
+    --pl.pretty.dump(tItemConfig)
+    if tItemConfig==nil then
+      local strMsg = string.format('No data provider item found with the name "%s".', strMacDp)
+      tLog.error(strMsg)
+      error(strMsg)
+    else
+      -- Check if the data provider item for the MAC addresses exists and has the necessary configuration.
+      if tItemConfig.MACQUANTITY == nil then
+        local strMsg = string.format(
+          'The data provider item "%s" has no "MACQUANTITY" configuration. Is this really a suitable provider for the MAC addresses?',
+          strMacDp
+        )
+        tLog.error(strMsg)
+        error(strMsg)
+      else
+        -- Extract COM and APP Quantity
+        local atMacQuantity = tItemConfig.MACQUANTITY
+        if atMacQuantity.COM~=nil then
+          ulMacCom = tonumber(atMacQuantity.COM)
+          if ulMacCom==nil then
+            local strMsg = string.format('Invalid MAC quantity, "COM" is not a number: %s', tostring(atMacQuantity.COM))
+            tLog.error(strMsg)
+            error(strMsg)
+          end
+        end
+
+        if atMacQuantity.APP~=nil then
+          ulMacApp = tonumber(atMacQuantity.APP)
+          if ulMacApp==nil then
+            local strMsg = string.format('Invalid MAC quantity, "APP" is not a number: %s', tostring(atMacQuantity.APP))
+            tLog.error(strMsg)
+            error(strMsg)
+          end
+        end
+
+        tLog.debug(string.format('MAC quantity for COM: %d, APP: %d', ulMacCom, ulMacApp))
+
+        -- Request the MAC addresses and add them to the patch data.
+        -- func already checks if mac adress count > 0.
+        self:requestMacs(tFDLContents, tPatches, strMacDp, ulMacCom, ulMacApp)
+      end
+    end
+  end
+
+
 
   -- Apply the patch to the FDL template.
   self:applyPatchData(tFDLContents, tPatches)
