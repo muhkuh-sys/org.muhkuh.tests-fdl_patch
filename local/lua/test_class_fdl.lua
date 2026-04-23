@@ -134,7 +134,8 @@ function TestClassFDL:run()
   self:setProductionDate(tPatches)
 
   -- First check HREP for existing MAC-Configuration.
-  local ulMacCom, ulMacApp
+  local ulMacCom = 0
+  local ulMacApp = 0
   local tItemConfig = {}
   tLog.debug('Checking %s, if a data provider item for the MAC addresses is configured...', strMacDp)
   if strMacDp == nil then
